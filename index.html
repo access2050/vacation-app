@@ -27,7 +27,7 @@
         .info { display: flex; flex-direction: column; }
         .date { font-weight: bold; color: #333; }
         .memo { font-size: 0.85rem; color: #666; }
-        .del-btn { width: auto; padding: 5px 10px; background: #ff4d4d; font-size: 0.8rem; margin: 0; color: white; border: none; border-radius: 4px; }
+        .del-btn { width: auto; padding: 5px 10px; background: #ff4d4d; font-size: 0.8rem; margin: 0; color: white; border: none; border-radius: 4px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -48,7 +48,6 @@
             <option value="-1">연차 사용 (-1)</option>
             <option value="-0.5">오전 반차 (-0.5)</option>
             <option value="-0.5">오후 반차 (-0.5)</option>
-            <option value="1">연차 부여 (+1)</option>
         </select>
         <input type="text" id="vacMemo" placeholder="메모 (사유 등)">
         <button onclick="addVacation()">기록하기</button>
@@ -57,19 +56,17 @@
     <div class="card list-container" id="historyList"></div>
 
     <script>
-        const STORAGE_KEY = 'vacation_history_v3';
-        const LIMIT_KEY = 'vacation_limit_v3';
+        const STORAGE_KEY = 'vacation_history_v4';
+        const LIMIT_KEY = 'vacation_limit_v4';
         let historyData = [];
 
         window.onload = () => {
-            // 설정 및 데이터 복구
             const savedLimit = localStorage.getItem(LIMIT_KEY);
             if (savedLimit) document.getElementById('totalLimit').value = savedLimit;
             
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) historyData = JSON.parse(savedData);
             
-            // 오늘 날짜 기본값 (시차 보정)
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000;
             document.getElementById('vacDate').value = new Date(now - offset).toISOString().split('T')[0];
