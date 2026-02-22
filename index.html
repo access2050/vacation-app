@@ -8,36 +8,36 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <style>
-        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --text: #333; --light-text: #888; }
+        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --text: #333; --light: #888; --border: #f0f0f0; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
         .card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
-        h3 { margin: 0 0 15px 0; font-size: 1rem; color: var(--light-text); font-weight: 600; }
+        h3 { margin: 0 0 15px 0; font-size: 0.9rem; color: var(--light); font-weight: 600; letter-spacing: -0.5px; }
         
-        /* 상단 현황판 */
+        /* 상단 대시보드 */
         .summary { display: flex; justify-content: space-around; align-items: center; }
-        .summary h4 { margin: 0; font-size: 0.85rem; color: var(--light-text); }
-        .summary p { margin: 2px 0 0; font-size: 1.5rem; font-weight: bold; color: var(--primary); }
-        #totalDays { width: 50px; border: none; border-bottom: 1px solid #ddd; text-align: center; font-size: 1.1rem; font-weight: bold; color: var(--primary); outline: none; }
+        .summary h4 { margin: 0; font-size: 0.8rem; color: var(--light); }
+        .summary p { margin: 2px 0 0; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
+        #totalDays { width: 45px; border: none; border-bottom: 1.5px solid #ddd; text-align: center; font-size: 1.1rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
 
         /* 입력 폼 */
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 1rem; box-sizing: border-box; margin-bottom: 10px; background: #fafafa; }
-        button#addBtn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; transition: 0.2s; }
-        button#addBtn:active { opacity: 0.8; transform: scale(0.98); }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 1rem; box-sizing: border-box; margin-bottom: 10px; background: #fafafa; -webkit-appearance: none; }
+        button#addBtn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        button#addBtn:active { opacity: 0.8; }
 
-        /* 사용 기록 리스트 (가장 신경 쓴 부분) */
-        .history-item { border-bottom: 1px solid #f0f0f0; padding: 15px 0; }
+        /* 사용 기록 - 깔끔한 리스트 스타일 */
+        .history-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
         .history-item:last-child { border-bottom: none; }
         .history-header { display: flex; justify-content: space-between; align-items: center; }
-        .history-info { display: flex; align-items: center; gap: 8px; }
+        .history-info { display: flex; align-items: center; gap: 10px; }
         .history-date { font-weight: 600; font-size: 1rem; color: #2c3e50; }
-        .history-type { font-size: 0.75rem; color: var(--primary); font-weight: bold; }
+        .history-type { font-size: 0.75rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 2px 8px; border-radius: 4px; }
         
-        /* 삭제 버튼 - 텍스트로만 심플하게 */
-        .del-link { color: #ccc; background: none; border: none; font-size: 0.8rem; cursor: pointer; text-decoration: underline; padding: 5px; }
-        .del-link:hover { color: #ff4d4d; }
+        /* 삭제 버튼 - 오른쪽 끝 텍스트형 */
+        .del-link { color: #bbb; background: none; border: none; font-size: 0.75rem; cursor: pointer; padding: 5px 0 5px 10px; text-decoration: none; }
+        .del-link:active { color: #ff4d4d; }
 
-        .history-memo { margin-top: 6px; font-size: 0.9rem; color: #666; line-height: 1.4; }
-        #loader { display:none; text-align:center; padding:10px; font-size: 0.8rem; color: var(--light-text); }
+        .history-memo { margin-top: 6px; font-size: 0.85rem; color: #777; line-height: 1.4; padding-left: 2px; }
+        #loader { display:none; text-align:center; padding:10px; font-size: 0.8rem; color: var(--light); }
     </style>
 </head>
 <body>
@@ -50,16 +50,16 @@
     </div>
 
     <div class="card">
-        <h3>등록</h3>
+        <h3>연차 등록</h3>
         <input type="date" id="vacDate">
         <select id="vacType">
             <option value="1">연차 (1일)</option>
             <option value="0.5">오전반차 (0.5일)</option>
             <option value="0.5">오후반차 (0.5일)</option>
         </select>
-        <textarea id="vacMemo" placeholder="메모 (선택사항)"></textarea>
-        <button id="addBtn" onclick="addVacation()">시트에 저장</button>
-        <div id="loader">⌛ 데이터를 처리하고 있습니다...</div>
+        <textarea id="vacMemo" placeholder="메모를 입력하세요 (선택)"></textarea>
+        <button id="addBtn" onclick="addVacation()">구글 시트에 저장</button>
+        <div id="loader">⌛ 처리 중입니다...</div>
     </div>
 
     <div class="card">
@@ -68,7 +68,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxoYdpMJ5gokrcXymPPxJ8RSr-bVQAJ1yztT-u4rzsi_buCu7KtRGKToN6qPhvrZASJYQ/exec"; // 본인의 URL로 꼭 바꿔주세요!
+        const API_URL = "https://script.google.com/macros/s/AKfycbxoYdpMJ5gokrcXymPPxJ8RSr-bVQAJ1yztT-u4rzsi_buCu7KtRGKToN6qPhvrZASJYQ/exec"; // 본인의 URL로 꼭 교체하세요!
         let history = [];
 
         window.onload = () => {
@@ -104,7 +104,7 @@
         }
 
         async function deleteItem(date, memo) {
-            if(!confirm("기록을 삭제할까요?")) return;
+            if(!confirm("이 기록을 삭제하시겠습니까?")) return;
             document.getElementById('loader').style.display = 'block';
             const pureDate = date.split(' ')[0];
             await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "delete", date: pureDate, memo })});
@@ -118,13 +118,13 @@
             document.getElementById('remainDays').innerText = (total - used).toFixed(1);
             
             document.getElementById('historyList').innerHTML = history.length === 0 ? 
-                '<p style="text-align:center; color:#ccc; font-size:0.9rem;">기록이 없습니다.</p>' :
+                '<p style="text-align:center; color:#ccc; font-size:0.85rem; padding: 20px 0;">사용 기록이 없습니다.</p>' :
                 history.map(item => `
                 <div class="history-item">
                     <div class="history-header">
                         <div class="history-info">
                             <span class="history-date">${item.date}</span>
-                            <span class="history-type">${item.type}</span>
+                            <span class="history-type">${item.type.split(' ')[0]}</span>
                         </div>
                         <button class="del-link" onclick="deleteItem('${item.date}', '${item.memo}')">삭제</button>
                     </div>
