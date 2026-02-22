@@ -5,36 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>연차 매니저</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" id="theme-color" content="#4a90e2">
+    
     <style>
-        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --text: #333; --light: #888; --border: #f0f0f0; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
-        .card { background: var(--card); padding: 22px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
-        h3 { margin: 0 0 18px 0; font-size: 1rem; color: var(--light); font-weight: 600; }
-        .summary { display: flex; justify-content: space-around; align-items: center; gap: 10px; }
-        .summary-item { text-align: center; flex: 1; }
-        .summary h4 { margin: 0 0 5px 0; font-size: 0.9rem; color: var(--light); }
+        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --text: #333; --light: #888; --border: #f2f2f2; --danger: #e74c3c; --success: #2ecc71; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); padding-top: 45px; }
+        
+        /* 상단 상태바 */
+        #status-bar {
+            position: fixed; top: 0; left: 0; right: 0; height: 35px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: bold; z-index: 1000; color: white; transition: 0.3s;
+        }
+        .online { background: var(--success); }
+        .offline { background: var(--danger); }
+
+        .card { background: var(--card); padding: 22px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        h3 { margin: 0 0 15px 0; font-size: 0.95rem; color: var(--light); font-weight: 600; }
+        
+        .summary { display: flex; justify-content: space-around; align-items: center; }
+        .summary-item { text-align: center; }
+        .summary h4 { margin: 0 0 5px 0; font-size: 0.85rem; color: var(--light); }
         .summary p { margin: 0; font-size: 1.8rem; font-weight: bold; color: var(--primary); }
-        #totalDays { width: 90px; border: none; border-bottom: 2px solid var(--primary); text-align: center; font-size: 1.6rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
-        input, select, textarea { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; background: #fafafa; }
-        button#addBtn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        .history-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
+        
+        #totalDays { width: 85px; border: none; border-bottom: 2px solid var(--primary); text-align: center; font-size: 1.6rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
+
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 1rem; box-sizing: border-box; margin-bottom: 10px; background: #fafafa; }
+        
+        button#addBtn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        button#addBtn:disabled { background: #ccc; }
+
+        /* 사용 기록 - 시인성 최적화 */
+        .history-item { border-bottom: 1px solid var(--border); padding: 15px 0; }
+        .history-item:last-child { border-bottom: none; }
         .history-header { display: flex; justify-content: space-between; align-items: center; }
-        .history-info { display: flex; align-items: center; gap: 12px; }
-        .history-date { font-weight: 600; font-size: 1.1rem; color: #2c3e50; }
-        .history-type { font-size: 0.85rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 3px 10px; border-radius: 6px; }
-        .del-link { color: #ccc; background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 5px 0 5px 15px; }
-        .history-memo { margin-top: 8px; font-size: 0.95rem; color: #666; line-height: 1.5; }
-        #loader { display:none; text-align:center; padding:15px; font-size: 0.9rem; color: var(--light); }
-        .offline-badge { display: none; background: #e74c3c; color: white; text-align: center; font-size: 0.8rem; padding: 5px; border-radius: 5px; margin-bottom: 10px; }
+        .history-info { display: flex; align-items: center; gap: 8px; }
+        .history-date { font-weight: 700; font-size: 1.05rem; color: #333; letter-spacing: -0.5px; }
+        .history-type { font-size: 0.8rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 2px 8px; border-radius: 5px; }
+        
+        .del-link { color: #ccc; background: none; border: none; font-size: 0.8rem; cursor: pointer; padding: 5px 0 5px 10px; }
+        .history-memo { margin-top: 6px; font-size: 0.9rem; color: #666; line-height: 1.4; padding: 8px; background: #f9f9f9; border-radius: 6px; }
+        #loader { display:none; text-align:center; padding:10px; font-size: 0.85rem; color: var(--light); }
     </style>
 </head>
 <body>
-    <div id="offlineMsg" class="offline-badge">현재 오프라인 상태입니다. (조회만 가능)</div>
+    <div id="status-bar" class="online">연결됨</div>
     
     <div class="card">
-        <h3>연차 현황</h3>
+        <h3>현황</h3>
         <div class="summary">
             <div class="summary-item">
                 <h4>총 연차</h4>
@@ -48,16 +66,16 @@
     </div>
 
     <div class="card">
-        <h3>신규 등록</h3>
+        <h3>기록</h3>
         <input type="date" id="vacDate">
         <select id="vacType">
             <option value="1">연차 (1일)</option>
             <option value="0.5">오전반차 (0.5일)</option>
             <option value="0.5">오후반차 (0.5일)</option>
         </select>
-        <textarea id="vacMemo" placeholder="사유를 입력하세요"></textarea>
+        <textarea id="vacMemo" placeholder="메모(선택)"></textarea>
         <button id="addBtn" onclick="addVacation()">구글 시트에 저장</button>
-        <div id="loader">⌛ 처리 중...</div>
+        <div id="loader">⌛ 서버 통신 중...</div>
     </div>
 
     <div class="card">
@@ -66,7 +84,6 @@
     </div>
 
     <script>
-        // 서비스 워커 등록 (오프라인 실행용)
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
@@ -76,23 +93,34 @@
 
         window.onload = () => {
             document.getElementById('totalDays').value = localStorage.getItem('totalDays') || 15;
-            // 오프라인 대비: 기존에 저장된 데이터가 있으면 먼저 보여줌
-            const cachedData = localStorage.getItem('cachedHistory');
-            if (cachedData) {
-                history = JSON.parse(cachedData);
+            const cached = localStorage.getItem('cachedHistory');
+            if (cached) {
+                history = JSON.parse(cached);
                 renderUI();
             }
             fetchData();
-            
-            // 온라인/오프라인 감지
-            window.addEventListener('online', () => {
-                document.getElementById('offlineMsg').style.display = 'none';
-                fetchData();
-            });
-            window.addEventListener('offline', () => {
-                document.getElementById('offlineMsg').style.display = 'block';
-            });
+            updateStatus();
+            window.addEventListener('online', updateStatus);
+            window.addEventListener('offline', updateStatus);
         };
+
+        function updateStatus() {
+            const status = document.getElementById('status-bar');
+            const btn = document.getElementById('addBtn');
+            const themeMeta = document.getElementById('theme-color');
+            if (navigator.onLine) {
+                status.innerText = "연결됨";
+                status.className = "online";
+                themeMeta.setAttribute("content", "#2ecc71");
+                btn.disabled = false;
+                fetchData();
+            } else {
+                status.innerText = "오프라인 (조회 전용)";
+                status.className = "offline";
+                themeMeta.setAttribute("content", "#e74c3c");
+                btn.disabled = true;
+            }
+        }
 
         function saveTotal() {
             localStorage.setItem('totalDays', document.getElementById('totalDays').value);
@@ -100,22 +128,19 @@
         }
 
         async function fetchData() {
-            if(!navigator.onLine) return; // 오프라인이면 통신 안 함
+            if(!navigator.onLine) return;
             try {
                 const res = await fetch(API_URL);
                 const rows = await res.json();
                 history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
-                // 데이터를 폰에 저장 (오프라인 조회용)
                 localStorage.setItem('cachedHistory', JSON.stringify(history));
                 renderUI();
-            } catch (e) { console.log("서버 연결 실패"); }
+            } catch (e) { console.log("Error"); }
         }
 
         async function addVacation() {
-            if(!navigator.onLine) return alert("오프라인 상태에서는 등록할 수 없습니다.");
-            
             const date = document.getElementById('vacDate').value;
-            const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text;
+            const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text.split(' ')[0];
             const type = document.getElementById('vacType').value;
             const memo = document.getElementById('vacMemo').value;
             if(!date) return alert("날짜 선택!");
@@ -128,7 +153,7 @@
         }
 
         async function deleteItem(date, memo) {
-            if(!navigator.onLine) return alert("오프라인 상태에서는 삭제할 수 없습니다.");
+            if(!navigator.onLine) return alert("오프라인 불가");
             if(!confirm("삭제할까요?")) return;
             document.getElementById('loader').style.display = 'block';
             const pureDate = date.split(' ')[0];
@@ -141,20 +166,21 @@
             const total = parseFloat(document.getElementById('totalDays').value) || 0;
             const used = history.reduce((acc, cur) => acc + parseFloat(cur.point), 0);
             document.getElementById('remainDays').innerText = (total - used).toFixed(1);
-            document.getElementById('historyList').innerHTML = history.length === 0 ? 
-                '<p style="text-align:center; color:#ccc; padding:20px;">기록 없음</p>' :
-                history.map(item => `
+            document.getElementById('historyList').innerHTML = history.map(item => {
+                // 날짜에서 요일 부분 강제 제거 로직 (2026-03-14 등만 남김)
+                const displayDate = item.date.split(' ')[0];
+                return `
                 <div class="history-item">
                     <div class="history-header">
                         <div class="history-info">
-                            <span class="history-date">${item.date}</span>
-                            <span class="history-type">${item.type}</span>
+                            <span class="history-date">${displayDate}</span>
+                            <span class="history-type">${item.type.split(' ')[0]}</span>
                         </div>
-                        <button class="del-link" onclick="deleteItem('${item.date}', '${item.memo}')">삭제</button>
+                        <button class="del-link" onclick="deleteItem('${displayDate}', '${item.memo}')">삭제</button>
                     </div>
                     ${item.memo ? `<div class="history-memo">${item.memo}</div>` : ''}
                 </div>
-            `).join('');
+            `}).join('');
         }
     </script>
 </body>
