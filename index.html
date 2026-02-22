@@ -4,45 +4,30 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>연차 매니저</title>
-    <link rel="manifest" id="my-manifest">
-    <script>
-        // 설치 가능하게 만드는 매니페스트 데이터
-        const myDynamicManifest = {
-            "name": "연차 관리 매니저",
-            "short_name": "연차매니저",
-            "start_url": ".",
-            "display": "standalone",
-            "background_color": "#f5f7fa",
-            "theme_color": "#4a90e2",
-            "icons": [{
-                "src": "https://cdn-icons-png.flaticon.com/512/2370/2370264.png",
-                "sizes": "512x512",
-                "type": "image/png"
-            }]
-        };
-        const stringManifest = JSON.stringify(myDynamicManifest);
-        const blob = new Blob([stringManifest], {type: 'application/json'});
-        const manifestURL = URL.createObjectURL(blob);
-        document.querySelector('#my-manifest').setAttribute('href', manifestURL);
-    </script>
-    
+    <link rel="manifest" href="manifest.json">
     <style>
         :root { --primary: #4a90e2; --bg: #f5f7fa; }
         body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
         .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 15px; box-sizing: border-box; }
+        
         .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; color: #333; font-size: 1.1rem; }
         #remainingPoints { color: var(--primary); font-size: 1.6rem; font-weight: bold; }
+        
         .setting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ddd; }
-        .setting-row label { font-size: 0.8rem; color: #666; white-space: nowrap; }
-        .setting-row input { margin: 0; padding: 8px; font-size: 0.9rem; border-radius: 6px; width: 60px; }
+        .setting-row label { font-size: 0.85rem; color: #666; white-space: nowrap; }
+        .setting-row input { margin: 0; padding: 8px; font-size: 0.9rem; border-radius: 6px; width: 70px; text-align: center; }
+
         input, select, button { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
         button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+        
+        .list-container { padding: 0; overflow: hidden; }
         .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .list-item:last-child { border-bottom: none; }
         .info { display: flex; flex-direction: column; }
         .date { font-weight: bold; color: #333; }
         .memo { font-size: 0.85rem; color: #666; }
-        .del-btn { width: auto; padding: 5px 10px; background: #ff4d4d; font-size: 0.8rem; margin: 0; border: none; color: white; border-radius: 4px; }
+        .del-btn { width: auto; padding: 5px 10px; background: #ff4d4d; font-size: 0.8rem; margin: 0; color: white; border: none; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -52,47 +37,47 @@
             <h2>남은 연차:</h2>
             <span id="remainingPoints">0.0</span>
         </div>
+
         <div class="setting-row">
-            <label>기본 총 연차 설정:</label>
-            <input type="number" id="totalLimit" step="0.5" value="15" onchange="saveLimit()">
+            <label>📅 총 연차 일수 설정:</label>
+            <input type="number" id="totalLimit" step="0.5" value="15" onchange="saveSettings()">
         </div>
+
         <input type="date" id="vacDate">
         <select id="vacType">
             <option value="-1">연차 사용 (-1)</option>
             <option value="-0.5">오전 반차 (-0.5)</option>
             <option value="-0.5">오후 반차 (-0.5)</option>
-            <option value="1">추가 연차 부여 (+1)</option>
+            <option value="1">연차 부여 (+1)</option>
         </select>
         <input type="text" id="vacMemo" placeholder="메모 (사유 등)">
         <button onclick="addVacation()">기록하기</button>
     </div>
 
-    <div class="card" style="padding: 0;" id="historyList"></div>
+    <div class="card list-container" id="historyList"></div>
 
     <script>
-        const STORAGE_KEY = 'my_vacation_data_v2';
-        const LIMIT_KEY = 'my_vacation_limit';
+        const STORAGE_KEY = 'vacation_history_v3';
+        const LIMIT_KEY = 'vacation_limit_v3';
         let historyData = [];
 
         window.onload = () => {
+            // 설정 및 데이터 복구
             const savedLimit = localStorage.getItem(LIMIT_KEY);
             if (savedLimit) document.getElementById('totalLimit').value = savedLimit;
+            
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) historyData = JSON.parse(savedData);
             
+            // 오늘 날짜 기본값 (시차 보정)
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000;
-            const localISOTime = new Date(now - offset).toISOString().split('T')[0];
-            document.getElementById('vacDate').value = localISOTime;
+            document.getElementById('vacDate').value = new Date(now - offset).toISOString().split('T')[0];
+            
             renderUI();
-
-            // 서비스 워커 등록 (설치 기능을 위해 필요)
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch", (e) => {});');
-            }
         };
 
-        function saveLimit() {
+        function saveSettings() {
             localStorage.setItem(LIMIT_KEY, document.getElementById('totalLimit').value);
             renderUI();
         }
@@ -101,16 +86,24 @@
             const listDiv = document.getElementById('historyList');
             const remainSpan = document.getElementById('remainingPoints');
             const totalLimit = parseFloat(document.getElementById('totalLimit').value) || 0;
-            let used = 0;
+            
+            let currentPoints = totalLimit;
             let html = "";
+
             historyData.forEach((item, index) => {
-                used += parseFloat(item.point);
-                html += `<div class="list-item">
-                    <div class="info"><span class="date">${item.date} (${item.type})</span><span class="memo">${item.memo || '-'}</span></div>
-                    <button class="del-btn" onclick="deleteItem(${index})">삭제</button>
-                </div>`;
+                currentPoints += parseFloat(item.point);
+                html += `
+                    <div class="list-item">
+                        <div class="info">
+                            <span class="date">${item.date} (${item.type})</span>
+                            <span class="memo">${item.memo || '-'}</span>
+                        </div>
+                        <button class="del-btn" onclick="deleteItem(${index})">삭제</button>
+                    </div>
+                `;
             });
-            remainSpan.innerText = (totalLimit + used).toFixed(1) + "개";
+
+            remainSpan.innerText = currentPoints.toFixed(1) + "개";
             listDiv.innerHTML = html || '<div style="padding:20px; text-align:center; color:#999;">기록이 없습니다.</div>';
         }
 
@@ -120,7 +113,9 @@
             const typeText = typeSelect.options[typeSelect.selectedIndex].text.split(' ')[0];
             const point = parseFloat(typeSelect.value);
             const memo = document.getElementById('vacMemo').value;
-            if(!date) return alert("날짜를 선택하세요!");
+            
+            if(!date) return alert("날짜를 입력하세요!");
+
             historyData.unshift({ date, point, type: typeText, memo });
             saveAndRefresh();
             document.getElementById('vacMemo').value = "";
