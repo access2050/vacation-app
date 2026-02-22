@@ -26,7 +26,7 @@
         .history-type { font-size: 0.8rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 4px 10px; border-radius: 6px; }
         .del-link { color: #bbb; background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 5px; }
         .history-memo { margin-top: 10px; font-size: 0.9rem; color: #666; background: #f8f9fb; padding: 10px; border-radius: 8px; line-height: 1.4; border-left: 3px solid #ddd; }
-        #loader { display:none; text-align:center; padding:15px; font-size: 0.9rem; color: var(--light); }
+        #loader { display:none; text-align:center; padding:15px; font-size: 0.9rem; color: var(--light); font-weight: bold; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -54,7 +54,7 @@
         </select>
         <textarea id="vacMemo" placeholder="사유를 입력하세요 (선택)"></textarea>
         <button id="addBtn" onclick="addVacation()">저장하기</button>
-        <div id="loader">⌛ 처리 중...</div>
+        <div id="loader">● 동기화 중...</div>
     </div>
 
     <div class="card">
@@ -63,16 +63,13 @@
     </div>
 
     <script>
-        // ⚠️ 본인의 구글 앱 스크립트(GAS) URL을 반드시 아래 따옴표 안에 넣어주세요!
+        // ⚠️ 본인의 GAS URL을 여기에 입력하세요!
         const API_URL = "https://script.google.com/macros/s/AKfycbzBm9hkTXdxZAgfi1rwoXZ-uJZgiBBmDl8QZ5grO-jZ2ax9lsBOurGrDOLBCj7sDLkq7Q/exec"; 
         
         let history = [];
 
-        // 앱이 켜지자마자 실행되는 부분
         window.onload = async () => {
-            // 1. 저장된 총 연차 불러오기
             document.getElementById('totalDays').value = localStorage.getItem('totalDays') || 15;
-            // 2. 구글 시트 데이터 즉시 가져오기
             await fetchData();
         };
 
@@ -82,21 +79,18 @@
         }
 
         async function fetchData() {
-            if(!API_URL || API_URL.includes("여기에")) {
-                document.getElementById('historyList').innerText = "API URL이 설정되지 않았습니다.";
-                return;
-            }
+            if(!API_URL || API_URL.includes("여기에")) return;
             try {
                 const res = await fetch(API_URL);
                 const rows = await res.json();
-                // 시트에서 가져온 데이터를 저장
                 history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
                 renderUI();
             } catch(e) { 
-                document.getElementById('historyList').innerText = "데이터 로드 실패 (URL 확인 필요)";
+                document.getElementById('historyList').innerText = "데이터 연결 실패";
             }
         }
 
+        // [추가 로직 최적화]
         async function addVacation() {
             const date = document.getElementById('vacDate').value;
             const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text.split(' ')[0];
@@ -104,18 +98,41 @@
             const memo = document.getElementById('vacMemo').value;
             if(!date) return alert("날짜를 선택하세요.");
             
-            document.getElementById('loader').style.display = 'block';
-            await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "add", date, type, typeText, memo })});
+            // UI 선 반영: 서버 기다리지 않고 화면에 먼저 보여줌
+            const newItem = { date: date, point: type, type: typeText, memo: memo };
+            history.unshift(newItem); // 리스트 맨 앞에 추가
+            renderUI();
+
             document.getElementById('vacMemo').value = "";
-            await fetchData(); // 추가 후 다시 데이터 로드
+            document.getElementById('loader').style.display = 'block';
+
+            try {
+                await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "add", date, type, typeText, memo })});
+                await fetchData(); // 서버와 최종 동기화
+            } catch(e) { 
+                alert("서버 저장 실패. 인터넷 상태를 확인하세요.");
+                await fetchData(); // 실패 시 데이터 복구
+            }
             document.getElementById('loader').style.display = 'none';
         }
 
+        // [삭제 로직 최적화]
         async function deleteItem(date, memo) {
             if(!confirm("삭제할까요?")) return;
+            
+            // UI 선 반영: 화면에서 즉시 제거
+            history = history.filter(item => !(item.date.substring(0,10) === date && item.memo === memo));
+            renderUI();
+
             document.getElementById('loader').style.display = 'block';
-            await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "delete", date: date, memo: memo })});
-            await fetchData(); // 삭제 후 다시 데이터 로드
+
+            try {
+                await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "delete", date: date, memo: memo })});
+                await fetchData(); // 서버와 최종 동기화
+            } catch(e) {
+                alert("삭제 처리 실패");
+                await fetchData();
+            }
             document.getElementById('loader').style.display = 'none';
         }
 
@@ -125,12 +142,12 @@
             document.getElementById('remainDays').innerText = (total - used).toFixed(1);
             
             if(history.length === 0) {
-                document.getElementById('historyList').innerText = "기록이 없습니다.";
+                document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#ccc">기록이 없습니다.</p>';
                 return;
             }
 
             document.getElementById('historyList').innerHTML = history.map(item => {
-                // 요일 제거 (숫자-숫자-숫자 형태만 남김)
+                // 요일 박멸 로직 (앞 10자리 고정)
                 const cleanDate = item.date.substring(0, 10);
                 return `
                 <div class="history-item">
