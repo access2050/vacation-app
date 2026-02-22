@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>스마트 연차 매니저</title>
+    <style>
+        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
+        .card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        h3 { margin-top: 0; font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 15px; }
+        .summary { display: flex; justify-content: space-around; text-align: center; }
+        .summary div h4 { margin: 0; font-size: 0.8rem; color: #888; }
+        .summary div p { margin: 5px 0 0; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
+        .input-group { margin-top: 15px; }
+        label { font-size: 0.8rem; color: #888; display: block; margin-bottom: 5px; }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; background: #fff; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        button:disabled { background: #ccc; }
+        .history-item { border-bottom: 1px solid #eee; padding: 15px 0; }
+        .history-main { display: flex; justify-content: space-between; align-items: center; }
+        .history-date { font-weight: 700; font-size: 1.1rem; color: #2c3e50; }
+        .history-type { font-size: 0.8rem; color: var(--primary); background: #ebf3ff; padding: 4px 10px; border-radius: 20px; font-weight: bold; }
+        .history-memo { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 8px; font-size: 0.95rem; color: #555; border-left: 3px solid #ddd; }
+        #loader { display:none; text-align:center; padding:10px; color:#666; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h3>📊 연차 현황</h3>
+        <div class="summary">
+            <div><h4>총 연차</h4><input type="number" id="totalDays" value="15" style="width:60px; text-align:center;" onchange="renderUI()"></div>
+            <div><h4>남은 연차</h4><p id="remainDays">0</p></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>📅 연차 등록</h3>
+        <div class="input-group"><label>날짜</label><input type="date" id="vacDate"></div>
+        <div class="input-group">
+            <label>종류</label>
+            <select id="vacType">
+                <option value="1">연차 (1일)</option>
+                <option value="0.5">오전반차 (0.5일)</option>
+                <option value="0.5">오후반차 (0.5일)</option>
+            </select>
+        </div>
+        <div class="input-group"><label>메모</label><textarea id="vacMemo" placeholder="사유 입력"></textarea></div>
+        <button id="addBtn" onclick="addVacation()">구글 시트에 저장</button>
+        <div id="loader">⏳ 시트와 통신 중...</div>
+    </div>
+
+    <div class="card">
+        <h3>📋 사용 기록</h3>
+        <div id="historyList"></div>
+    </div>
+
+    <script>
+        // ⚠️ 사용자님의 배포 URL을 입력하세요
+        const API_URL = "https://script.google.com/macros/s/AKfycbzCX7qnsQVYOl4nDpbHzRj-dNDJ2VXopB4NRbMUxaP_tl46tdlncb5UU054hBlLIsZE-w/exec"; 
+        let history = [];
+
+        async function fetchData() {
+            if(API_URL.includes("여기에")) return;
+            try {
+                const response = await fetch(API_URL);
+                const rows = await response.json();
+                // 시트에서 getDisplayValues()로 가져왔으므로 row[0]은 이미 이쁜 날짜 문자열입니다.
+                history = rows.map(row => ({
+                    date: row[0], 
+                    point: row[1],   
+                    type: row[2],    
+                    memo: row[3] || ""
+                }));
+                renderUI();
+            } catch (e) { console.error("데이터 로드 실패:", e); }
+        }
+
+        async function addVacation() {
+            const date = document.getElementById('vacDate').value;
+            const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text;
+            const type = document.getElementById('vacType').value;
+            const memo = document.getElementById('vacMemo').value;
+            if(!date) return alert("날짜를 선택하세요");
+
+            document.getElementById('addBtn').disabled = true;
+            document.getElementById('loader').style.display = 'block';
+
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify({ method: "add", date, type, typeText, memo })
+                });
+                document.getElementById('vacMemo').value = "";
+                await fetchData();
+            } catch (e) { alert("저장 실패"); }
+
+            document.getElementById('addBtn').disabled = false;
+            document.getElementById('loader').style.display = 'none';
+        }
+
+        function renderUI() {
+            const total = parseFloat(document.getElementById('totalDays').value) || 0;
+            const used = history.reduce((acc, cur) => acc + parseFloat(cur.point || 0), 0);
+            document.getElementById('remainDays').innerText = (total - used).toFixed(1);
+            
+            const listDiv = document.getElementById('historyList');
+            listDiv.innerHTML = history.length === 0 ? '<p style="text-align:center; color:#ccc;">기록 없음</p>' : 
+                history.map(item => `
+                <div class="history-item">
+                    <div class="history-main">
+                        <span class="history-date">${item.date}</span>
+                        <span class="history-type">${item.type}</span>
+                    </div>
+                    ${item.memo ? `<div class="history-memo">📝 ${item.memo}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        window.onload = fetchData;
+    </script>
+</body>
+</html>
