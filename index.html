@@ -9,29 +9,21 @@
     <style>
         :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --text: #333; --light: #888; --border: #f2f2f2; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
-        
         .card { background: var(--card); padding: 22px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
         h3 { margin: 0 0 15px 0; font-size: 0.95rem; color: var(--light); font-weight: 600; }
-        
-        /* 상단 현황 디자인 */
         .summary { display: flex; justify-content: space-around; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 5px; }
         .summary-item { text-align: center; }
         .summary h4 { margin: 0 0 5px 0; font-size: 0.85rem; color: var(--light); }
         .summary p { margin: 0; font-size: 2rem; font-weight: bold; color: var(--primary); }
-        
-        /* 입력창 시인성 개선 */
         #totalDays { width: 90px; border: none; border-bottom: 3px solid var(--primary); text-align: center; font-size: 1.8rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
         input, select, textarea { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; background: #fafafa; border: 1px solid var(--border); }
         button#addBtn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3); }
-
-        /* 사용 기록 리스트 - 요일 없이 깔끔하게 */
         .history-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
         .history-item:last-child { border-bottom: none; }
         .history-header { display: flex; justify-content: space-between; align-items: center; }
         .history-info { display: flex; align-items: center; gap: 10px; }
         .history-date { font-weight: 700; font-size: 1.1rem; color: #333; }
         .history-type { font-size: 0.8rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 4px 10px; border-radius: 6px; }
-        
         .del-link { color: #bbb; background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 5px; }
         .history-memo { margin-top: 10px; font-size: 0.9rem; color: #666; background: #f8f9fb; padding: 10px; border-radius: 8px; line-height: 1.4; border-left: 3px solid #ddd; }
         #loader { display:none; text-align:center; padding:15px; font-size: 0.9rem; color: var(--light); }
@@ -71,7 +63,9 @@
     </div>
 
     <script>
+        // ⭐ 여기에 본인의 구글 앱 스크립트(GAS) 주소를 꼭 넣어주세요!
         const API_URL = "https://script.google.com/macros/s/AKfycbzBm9hkTXdxZAgfi1rwoXZ-uJZgiBBmDl8QZ5grO-jZ2ax9lsBOurGrDOLBCj7sDLkq7Q/exec"; 
+        
         let history = [];
 
         window.onload = () => {
@@ -85,11 +79,13 @@
         }
 
         async function fetchData() {
-            if(API_URL.includes("사용자님")) return;
-            const res = await fetch(API_URL);
-            const rows = await res.json();
-            history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
-            renderUI();
+            if(API_URL.includes("여기에") || API_URL === "") return;
+            try {
+                const res = await fetch(API_URL);
+                const rows = await res.json();
+                history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
+                renderUI();
+            } catch(e) { console.error("데이터 로드 실패"); }
         }
 
         async function addVacation() {
@@ -109,7 +105,6 @@
         async function deleteItem(date, memo) {
             if(!confirm("삭제할까요?")) return;
             document.getElementById('loader').style.display = 'block';
-            // 삭제 시에도 요일 없는 날짜만 보냄
             await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "delete", date: date, memo: memo })});
             await fetchData();
             document.getElementById('loader').style.display = 'none';
@@ -121,7 +116,7 @@
             document.getElementById('remainDays').innerText = (total - used).toFixed(1);
             
             document.getElementById('historyList').innerHTML = history.map(item => {
-                // 핵심: 날짜가 "2026-03-14 (토)" 이든 뭐든 앞에서 10자리만 남김
+                // 요일 제거 로직
                 const cleanDate = item.date.substring(0, 10);
                 return `
                 <div class="history-item">
@@ -133,8 +128,8 @@
                         <button class="del-link" onclick="deleteItem('${cleanDate}', '${item.memo}')">삭제</button>
                     </div>
                     ${item.memo ? `<div class="history-memo">${item.memo}</div>` : ''}
-                </div>
-            `}).join('');
+                </div>`;
+            }).join('');
         }
     </script>
 </body>
