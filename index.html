@@ -12,44 +12,27 @@
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
         .card { background: var(--card); padding: 22px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
         h3 { margin: 0 0 18px 0; font-size: 1rem; color: var(--light); font-weight: 600; }
-        
         .summary { display: flex; justify-content: space-around; align-items: center; gap: 10px; }
         .summary-item { text-align: center; flex: 1; }
         .summary h4 { margin: 0 0 5px 0; font-size: 0.9rem; color: var(--light); }
         .summary p { margin: 0; font-size: 1.8rem; font-weight: bold; color: var(--primary); }
-        
-        /* 총 연차 입력창 크기 확대 */
-        #totalDays { 
-            width: 90px; 
-            padding: 5px;
-            border: none; 
-            border-bottom: 2px solid var(--primary); 
-            text-align: center; 
-            font-size: 1.6rem; 
-            font-weight: bold; 
-            color: var(--primary); 
-            outline: none; 
-            background: transparent;
-        }
-
+        #totalDays { width: 90px; border: none; border-bottom: 2px solid var(--primary); text-align: center; font-size: 1.6rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
         input, select, textarea { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; background: #fafafa; }
         button#addBtn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        
         .history-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
-        .history-item:last-child { border-bottom: none; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .history-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; }
+        .history-info { display: flex; align-items: center; gap: 12px; }
         .history-date { font-weight: 600; font-size: 1.1rem; color: #2c3e50; }
         .history-type { font-size: 0.85rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 3px 10px; border-radius: 6px; }
-        
         .del-link { color: #ccc; background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 5px 0 5px 15px; }
-        .del-link:hover { color: #e74c3c; }
-
         .history-memo { margin-top: 8px; font-size: 0.95rem; color: #666; line-height: 1.5; }
         #loader { display:none; text-align:center; padding:15px; font-size: 0.9rem; color: var(--light); }
+        .offline-badge { display: none; background: #e74c3c; color: white; text-align: center; font-size: 0.8rem; padding: 5px; border-radius: 5px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
+    <div id="offlineMsg" class="offline-badge">현재 오프라인 상태입니다. (조회만 가능)</div>
+    
     <div class="card">
         <h3>연차 현황</h3>
         <div class="summary">
@@ -83,12 +66,32 @@
     </div>
 
     <script>
+        // 서비스 워커 등록 (오프라인 실행용)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
         const API_URL = "https://script.google.com/macros/s/AKfycbzBm9hkTXdxZAgfi1rwoXZ-uJZgiBBmDl8QZ5grO-jZ2ax9lsBOurGrDOLBCj7sDLkq7Q/exec"; 
         let history = [];
 
         window.onload = () => {
             document.getElementById('totalDays').value = localStorage.getItem('totalDays') || 15;
+            // 오프라인 대비: 기존에 저장된 데이터가 있으면 먼저 보여줌
+            const cachedData = localStorage.getItem('cachedHistory');
+            if (cachedData) {
+                history = JSON.parse(cachedData);
+                renderUI();
+            }
             fetchData();
+            
+            // 온라인/오프라인 감지
+            window.addEventListener('online', () => {
+                document.getElementById('offlineMsg').style.display = 'none';
+                fetchData();
+            });
+            window.addEventListener('offline', () => {
+                document.getElementById('offlineMsg').style.display = 'block';
+            });
         };
 
         function saveTotal() {
@@ -97,14 +100,20 @@
         }
 
         async function fetchData() {
-            if(API_URL.includes("여기에")) return;
-            const res = await fetch(API_URL);
-            const rows = await res.json();
-            history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
-            renderUI();
+            if(!navigator.onLine) return; // 오프라인이면 통신 안 함
+            try {
+                const res = await fetch(API_URL);
+                const rows = await res.json();
+                history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
+                // 데이터를 폰에 저장 (오프라인 조회용)
+                localStorage.setItem('cachedHistory', JSON.stringify(history));
+                renderUI();
+            } catch (e) { console.log("서버 연결 실패"); }
         }
 
         async function addVacation() {
+            if(!navigator.onLine) return alert("오프라인 상태에서는 등록할 수 없습니다.");
+            
             const date = document.getElementById('vacDate').value;
             const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text;
             const type = document.getElementById('vacType').value;
@@ -119,6 +128,7 @@
         }
 
         async function deleteItem(date, memo) {
+            if(!navigator.onLine) return alert("오프라인 상태에서는 삭제할 수 없습니다.");
             if(!confirm("삭제할까요?")) return;
             document.getElementById('loader').style.display = 'block';
             const pureDate = date.split(' ')[0];
