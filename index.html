@@ -10,65 +10,85 @@
     <style>
         :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --text: #333; --light: #888; --border: #f0f0f0; }
         body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
-        .card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
-        h3 { margin: 0 0 15px 0; font-size: 0.9rem; color: var(--light); font-weight: 600; letter-spacing: -0.5px; }
+        .card { background: var(--card); padding: 22px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
+        h3 { margin: 0 0 18px 0; font-size: 1rem; color: var(--light); font-weight: 600; }
         
-        /* 상단 대시보드 */
-        .summary { display: flex; justify-content: space-around; align-items: center; }
-        .summary h4 { margin: 0; font-size: 0.8rem; color: var(--light); }
-        .summary p { margin: 2px 0 0; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
-        #totalDays { width: 45px; border: none; border-bottom: 1.5px solid #ddd; text-align: center; font-size: 1.1rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
+        /* 총 연차 입력창 및 현황 개선 */
+        .summary { display: flex; justify-content: space-around; align-items: center; gap: 10px; }
+        .summary-item { text-align: center; flex: 1; }
+        .summary h4 { margin: 0 0 5px 0; font-size: 0.9rem; color: var(--light); }
+        .summary p { margin: 0; font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+        
+        /* 폰트 크기 및 창 크기 확대 */
+        #totalDays { 
+            width: 80px; 
+            padding: 5px;
+            border: none; 
+            border-bottom: 2px solid var(--primary); 
+            text-align: center; 
+            font-size: 1.5rem; /* 크기 대폭 확대 */
+            font-weight: bold; 
+            color: var(--primary); 
+            outline: none; 
+            background: transparent;
+        }
 
         /* 입력 폼 */
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #eee; border-radius: 10px; font-size: 1rem; box-sizing: border-box; margin-bottom: 10px; background: #fafafa; -webkit-appearance: none; }
-        button#addBtn { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+        input, select, textarea { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; background: #fafafa; -webkit-appearance: none; }
+        button#addBtn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
         button#addBtn:active { opacity: 0.8; }
 
-        /* 사용 기록 - 깔끔한 리스트 스타일 */
-        .history-item { border-bottom: 1px solid var(--border); padding: 16px 0; }
+        /* 사용 기록 - 요일 포함 가독성 개선 */
+        .history-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
         .history-item:last-child { border-bottom: none; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; }
-        .history-info { display: flex; align-items: center; gap: 10px; }
-        .history-date { font-weight: 600; font-size: 1rem; color: #2c3e50; }
-        .history-type { font-size: 0.75rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 2px 8px; border-radius: 4px; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+        .history-info { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .history-date { font-weight: 600; font-size: 1.1rem; color: #2c3e50; }
+        .history-type { font-size: 0.85rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 3px 10px; border-radius: 6px; }
         
-        /* 삭제 버튼 - 오른쪽 끝 텍스트형 */
-        .del-link { color: #bbb; background: none; border: none; font-size: 0.75rem; cursor: pointer; padding: 5px 0 5px 10px; text-decoration: none; }
-        .del-link:active { color: #ff4d4d; }
+        /* 삭제 버튼 - 오른쪽 끝 유지 */
+        .del-link { color: #ccc; background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 5px 0 5px 15px; white-space: nowrap; }
+        .del-link:hover { color: #e74c3c; }
 
-        .history-memo { margin-top: 6px; font-size: 0.85rem; color: #777; line-height: 1.4; padding-left: 2px; }
-        #loader { display:none; text-align:center; padding:10px; font-size: 0.8rem; color: var(--light); }
+        .history-memo { margin-top: 8px; font-size: 0.95rem; color: #666; line-height: 1.5; padding-left: 2px; }
+        #loader { display:none; text-align:center; padding:15px; font-size: 0.9rem; color: var(--light); }
     </style>
 </head>
 <body>
     <div class="card">
-        <h3>현황</h3>
+        <h3>연차 현황</h3>
         <div class="summary">
-            <div><h4>총 연차</h4><input type="number" id="totalDays" oninput="saveTotal()"></div>
-            <div><h4>남은 연차</h4><p id="remainDays">0</p></div>
+            <div class="summary-item">
+                <h4>총 연차</h4>
+                <input type="number" id="totalDays" step="0.5" oninput="saveTotal()">
+            </div>
+            <div class="summary-item">
+                <h4>남은 연차</h4>
+                <p id="remainDays">0</p>
+            </div>
         </div>
     </div>
 
     <div class="card">
-        <h3>연차 등록</h3>
+        <h3>신규 등록</h3>
         <input type="date" id="vacDate">
         <select id="vacType">
             <option value="1">연차 (1일)</option>
             <option value="0.5">오전반차 (0.5일)</option>
             <option value="0.5">오후반차 (0.5일)</option>
         </select>
-        <textarea id="vacMemo" placeholder="메모를 입력하세요 (선택)"></textarea>
-        <button id="addBtn" onclick="addVacation()">구글 시트에 저장</button>
-        <div id="loader">⌛ 처리 중입니다...</div>
+        <textarea id="vacMemo" placeholder="메모를 입력하세요 (사유 등)"></textarea>
+        <button id="addBtn" onclick="addVacation()">구글 시트에 저장하기</button>
+        <div id="loader">⌛ 시트와 동기화 중입니다...</div>
     </div>
 
     <div class="card">
-        <h3>기록</h3>
+        <h3>사용 기록</h3>
         <div id="historyList"></div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxoYdpMJ5gokrcXymPPxJ8RSr-bVQAJ1yztT-u4rzsi_buCu7KtRGKToN6qPhvrZASJYQ/exec"; // 본인의 URL로 꼭 교체하세요!
+        const API_URL = "https://script.google.com/macros/s/AKfycbxoYdpMJ5gokrcXymPPxJ8RSr-bVQAJ1yztT-u4rzsi_buCu7KtRGKToN6qPhvrZASJYQ/exec"; // 꼭 본인 URL로 교체!
         let history = [];
 
         window.onload = () => {
@@ -82,7 +102,7 @@
         }
 
         async function fetchData() {
-            if(API_URL.includes("여기에")) return;
+            if(API_URL.includes("사용자님")) return;
             const res = await fetch(API_URL);
             const rows = await res.json();
             history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
@@ -118,13 +138,13 @@
             document.getElementById('remainDays').innerText = (total - used).toFixed(1);
             
             document.getElementById('historyList').innerHTML = history.length === 0 ? 
-                '<p style="text-align:center; color:#ccc; font-size:0.85rem; padding: 20px 0;">사용 기록이 없습니다.</p>' :
+                '<p style="text-align:center; color:#ccc; font-size:0.9rem; padding: 20px 0;">기록이 없습니다.</p>' :
                 history.map(item => `
                 <div class="history-item">
                     <div class="history-header">
                         <div class="history-info">
                             <span class="history-date">${item.date}</span>
-                            <span class="history-type">${item.type.split(' ')[0]}</span>
+                            <span class="history-type">${item.type}</span>
                         </div>
                         <button class="del-link" onclick="deleteItem('${item.date}', '${item.memo}')">삭제</button>
                     </div>
