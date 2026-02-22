@@ -17,7 +17,7 @@
         .summary p { margin: 0; font-size: 2rem; font-weight: bold; color: var(--primary); }
         #totalDays { width: 90px; border: none; border-bottom: 3px solid var(--primary); text-align: center; font-size: 1.8rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
         input, select, textarea { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; background: #fafafa; border: 1px solid var(--border); }
-        button#addBtn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 10px rgba(74, 144, 226, 0.3); }
+        button#addBtn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
         .history-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
         .history-item:last-child { border-bottom: none; }
         .history-header { display: flex; justify-content: space-between; align-items: center; }
@@ -26,7 +26,7 @@
         .history-type { font-size: 0.8rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 4px 10px; border-radius: 6px; }
         .del-link { color: #bbb; background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 5px; }
         .history-memo { margin-top: 10px; font-size: 0.9rem; color: #666; background: #f8f9fb; padding: 10px; border-radius: 8px; line-height: 1.4; border-left: 3px solid #ddd; }
-        #loader { display:none; text-align:center; padding:15px; font-size: 0.9rem; color: var(--light); font-weight: bold; color: var(--primary); }
+        #loader { display:none; text-align:center; padding:10px; font-size: 0.8rem; font-weight: bold; color: var(--primary); }
     </style>
 </head>
 <body>
@@ -52,25 +52,25 @@
             <option value="0.5">오전반차 (0.5일)</option>
             <option value="0.5">오후반차 (0.5일)</option>
         </select>
-        <textarea id="vacMemo" placeholder="사유를 입력하세요 (선택)"></textarea>
+        <textarea id="vacMemo" placeholder="사유(선택)"></textarea>
         <button id="addBtn" onclick="addVacation()">저장하기</button>
-        <div id="loader">● 동기화 중...</div>
+        <div id="loader">● 시트 동기화 중...</div>
     </div>
 
     <div class="card">
         <h3>사용 기록</h3>
-        <div id="historyList">데이터를 불러오는 중...</div>
+        <div id="historyList">로딩 중...</div>
     </div>
 
     <script>
-        // ⚠️ 본인의 GAS URL을 여기에 입력하세요!
+        // ⚠️ 여기에 본인의 GAS 주소를 넣으세요!
         const API_URL = "https://script.google.com/macros/s/AKfycbzBm9hkTXdxZAgfi1rwoXZ-uJZgiBBmDl8QZ5grO-jZ2ax9lsBOurGrDOLBCj7sDLkq7Q/exec"; 
         
         let history = [];
 
-        window.onload = async () => {
+        window.onload = () => {
             document.getElementById('totalDays').value = localStorage.getItem('totalDays') || 15;
-            await fetchData();
+            fetchData();
         };
 
         function saveTotal() {
@@ -85,55 +85,56 @@
                 const rows = await res.json();
                 history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
                 renderUI();
-            } catch(e) { 
-                document.getElementById('historyList').innerText = "데이터 연결 실패";
-            }
+            } catch(e) { console.log("Load Error"); }
         }
 
-        // [추가 로직 최적화]
-        async function addVacation() {
+        // [핵심] 추가 버튼 누르자마자 즉시 실행
+        function addVacation() {
             const date = document.getElementById('vacDate').value;
             const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text.split(' ')[0];
             const type = document.getElementById('vacType').value;
             const memo = document.getElementById('vacMemo').value;
-            if(!date) return alert("날짜를 선택하세요.");
+            if(!date) return alert("날짜 선택!");
             
-            // UI 선 반영: 서버 기다리지 않고 화면에 먼저 보여줌
+            // 1. 화면에 즉시 추가 (0.01초)
             const newItem = { date: date, point: type, type: typeText, memo: memo };
-            history.unshift(newItem); // 리스트 맨 앞에 추가
+            history.unshift(newItem); 
             renderUI();
 
+            // 2. 입력창 초기화 및 로더 표시
             document.getElementById('vacMemo').value = "";
             document.getElementById('loader').style.display = 'block';
 
-            try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "add", date, type, typeText, memo })});
-                await fetchData(); // 서버와 최종 동기화
-            } catch(e) { 
-                alert("서버 저장 실패. 인터넷 상태를 확인하세요.");
-                await fetchData(); // 실패 시 데이터 복구
-            }
-            document.getElementById('loader').style.display = 'none';
+            // 3. 서버 전송 (비동기: 응답을 기다리지 않음!)
+            fetch(API_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ method: "add", date, type, typeText, memo })
+            })
+            .then(() => fetchData()) // 전송 완료 후에만 조용히 목록 갱신
+            .finally(() => {
+                document.getElementById('loader').style.display = 'none';
+            });
         }
 
-        // [삭제 로직 최적화]
-        async function deleteItem(date, memo) {
+        // [핵심] 삭제 버튼 누르자마자 즉시 실행
+        function deleteItem(date, memo) {
             if(!confirm("삭제할까요?")) return;
             
-            // UI 선 반영: 화면에서 즉시 제거
+            // 1. 화면에서 즉시 제거 (0.01초)
             history = history.filter(item => !(item.date.substring(0,10) === date && item.memo === memo));
             renderUI();
 
             document.getElementById('loader').style.display = 'block';
 
-            try {
-                await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "delete", date: date, memo: memo })});
-                await fetchData(); // 서버와 최종 동기화
-            } catch(e) {
-                alert("삭제 처리 실패");
-                await fetchData();
-            }
-            document.getElementById('loader').style.display = 'none';
+            // 2. 서버 전송 (비동기)
+            fetch(API_URL, { 
+                method: "POST", 
+                body: JSON.stringify({ method: "delete", date: date, memo: memo })
+            })
+            .then(() => fetchData())
+            .finally(() => {
+                document.getElementById('loader').style.display = 'none';
+            });
         }
 
         function renderUI() {
@@ -141,13 +142,7 @@
             const used = history.reduce((acc, cur) => acc + parseFloat(cur.point), 0);
             document.getElementById('remainDays').innerText = (total - used).toFixed(1);
             
-            if(history.length === 0) {
-                document.getElementById('historyList').innerHTML = '<p style="text-align:center;color:#ccc">기록이 없습니다.</p>';
-                return;
-            }
-
             document.getElementById('historyList').innerHTML = history.map(item => {
-                // 요일 박멸 로직 (앞 10자리 고정)
                 const cleanDate = item.date.substring(0, 10);
                 return `
                 <div class="history-item">
