@@ -2,161 +2,129 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>연차 매니저</title>
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#4a90e2">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>연차 관리 시스템</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --text: #333; --light: #888; --border: #f2f2f2; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
-        .card { background: var(--card); padding: 22px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h3 { margin: 0 0 15px 0; font-size: 0.95rem; color: var(--light); font-weight: 600; }
-        .summary { display: flex; justify-content: space-around; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 5px; }
-        .summary-item { text-align: center; }
-        .summary h4 { margin: 0 0 5px 0; font-size: 0.85rem; color: var(--light); }
-        .summary p { margin: 0; font-size: 2rem; font-weight: bold; color: var(--primary); }
-        #totalDays { width: 90px; border: none; border-bottom: 3px solid var(--primary); text-align: center; font-size: 1.8rem; font-weight: bold; color: var(--primary); outline: none; background: transparent; }
-        input, select, textarea { width: 100%; padding: 14px; border: 1px solid #eee; border-radius: 12px; font-size: 1rem; box-sizing: border-box; margin-bottom: 12px; background: #fafafa; border: 1px solid var(--border); }
-        button#addBtn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
-        .history-item { border-bottom: 1px solid var(--border); padding: 18px 0; }
-        .history-item:last-child { border-bottom: none; }
-        .history-header { display: flex; justify-content: space-between; align-items: center; }
-        .history-info { display: flex; align-items: center; gap: 10px; }
-        .history-date { font-weight: 700; font-size: 1.1rem; color: #333; }
-        .history-type { font-size: 0.8rem; color: var(--primary); font-weight: bold; background: #ebf3ff; padding: 4px 10px; border-radius: 6px; }
-        .del-link { color: #bbb; background: none; border: none; font-size: 0.85rem; cursor: pointer; padding: 5px; }
-        .history-memo { margin-top: 10px; font-size: 0.9rem; color: #666; background: #f8f9fb; padding: 10px; border-radius: 8px; line-height: 1.4; border-left: 3px solid #ddd; }
-        #loader { display:none; text-align:center; padding:10px; font-size: 0.8rem; font-weight: bold; color: var(--primary); }
+        :root { --primary: #4a90e2; --bg: #f5f7fa; }
+        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #333; font-size: 1.2rem; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:active { opacity: 0.8; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; background: white; }
+        .list-item:last-child { border-bottom: none; }
+        .info { display: flex; flex-direction: column; }
+        .date { font-weight: bold; color: #333; }
+        .memo { font-size: 0.85rem; color: #666; }
+        .del-btn { width: auto; padding: 5px 10px; background: #ff4d4d; font-size: 0.8rem; margin: 0; }
+        #totalPoints { color: var(--primary); font-size: 1.5rem; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h3>연차 현황</h3>
-        <div class="summary">
-            <div class="summary-item">
-                <h4>총 연차</h4>
-                <input type="number" id="totalDays" step="0.5" oninput="saveTotal()">
-            </div>
-            <div class="summary-item">
-                <h4>남은 연차</h4>
-                <p id="remainDays">0</p>
-            </div>
-        </div>
-    </div>
 
     <div class="card">
-        <h3>기록하기</h3>
+        <h2>내 연차 현황: <span id="totalPoints">0</span>개</h2>
         <input type="date" id="vacDate">
         <select id="vacType">
-            <option value="1">연차 (1일)</option>
-            <option value="0.5">오전반차 (0.5일)</option>
-            <option value="0.5">오후반차 (0.5일)</option>
+            <option value="-1">연차 사용 (-1)</option>
+            <option value="-0.5">오전 반차 (-0.5)</option>
+            <option value="-0.5">오후 반차 (-0.5)</option>
+            <option value="1">연차 부여 (+1)</option>
         </select>
-        <textarea id="vacMemo" placeholder="사유(선택)"></textarea>
-        <button id="addBtn" onclick="addVacation()">저장하기</button>
-        <div id="loader">● 시트 동기화 중...</div>
+        <input type="text" id="vacMemo" placeholder="메모 (사유 등)">
+        <button onclick="addVacation()">등록하기</button>
     </div>
 
-    <div class="card">
-        <h3>사용 기록</h3>
-        <div id="historyList">로딩 중...</div>
-    </div>
+    <div class="card" style="padding: 0; overflow: hidden;" id="historyList">
+        </div>
 
     <script>
-        // ⚠️ 여기에 본인의 GAS 주소를 넣으세요!
+        // ⚠️ 본인의 Google Apps Script Web App URL로 반드시 변경하세요!
         const API_URL = "https://script.google.com/macros/s/AKfycbzBm9hkTXdxZAgfi1rwoXZ-uJZgiBBmDl8QZ5grO-jZ2ax9lsBOurGrDOLBCj7sDLkq7Q/exec"; 
-        
         let history = [];
 
-        window.onload = () => {
-            document.getElementById('totalDays').value = localStorage.getItem('totalDays') || 15;
-            fetchData();
-        };
-
-        function saveTotal() {
-            localStorage.setItem('totalDays', document.getElementById('totalDays').value);
-            renderUI();
-        }
-
+        // 1. 초기 데이터 불러오기
         async function fetchData() {
-            if(!API_URL || API_URL.includes("여기에")) return;
             try {
                 const res = await fetch(API_URL);
-                const rows = await res.json();
-                history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
+                const data = await res.json();
+                history = data;
                 renderUI();
-            } catch(e) { console.log("Load Error"); }
+            } catch (e) { console.error("데이터 로드 실패"); }
         }
 
-        // [핵심] 추가 버튼 누르자마자 즉시 실행
+        // 2. 화면 그리기 (가장 중요: 이 함수가 실행될 때 딜레이가 없어야 함)
+        function renderUI() {
+            const listDiv = document.getElementById('historyList');
+            const totalSpan = document.getElementById('totalPoints');
+            
+            let total = 0;
+            listDiv.innerHTML = history.map(item => {
+                total += parseFloat(item.point || 0);
+                const displayDate = item.date ? item.date.substring(0, 10) : "";
+                return `
+                    <div class="list-item">
+                        <div class="info">
+                            <span class="date">${displayDate} (${item.type})</span>
+                            <span class="memo">${item.memo || ''}</span>
+                        </div>
+                        <button class="del-btn" onclick="deleteItem('${displayDate}', '${item.memo}')">삭제</button>
+                    </div>
+                `;
+            }).join('');
+            
+            totalSpan.innerText = total.toFixed(1);
+        }
+
+        // 3. 등록 (즉시 반영 로직)
         function addVacation() {
             const date = document.getElementById('vacDate').value;
-            const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text.split(' ')[0];
-            const type = document.getElementById('vacType').value;
+            const typeSelect = document.getElementById('vacType');
+            const typeText = typeSelect.options[typeSelect.selectedIndex].text.split(' ')[0];
+            const point = parseFloat(typeSelect.value);
             const memo = document.getElementById('vacMemo').value;
-            if(!date) return alert("날짜 선택!");
             
-            // 1. 화면에 즉시 추가 (0.01초)
-            const newItem = { date: date, point: type, type: typeText, memo: memo };
+            if(!date) return alert("날짜를 선택하세요!");
+
+            // [핵심] 서버 응답 안 기다리고 일단 목록에 추가
+            const newItem = { date: date, point: point, type: typeText, memo: memo };
             history.unshift(newItem); 
-            renderUI();
+            renderUI(); // 즉시 화면 갱신
+            document.getElementById('vacMemo').value = ""; // 입력창 초기화
 
-            // 2. 입력창 초기화 및 로더 표시
-            document.getElementById('vacMemo').value = "";
-            document.getElementById('loader').style.display = 'block';
-
-            // 3. 서버 전송 (비동기: 응답을 기다리지 않음!)
+            // 서버 전송은 백그라운드에서 실행
             fetch(API_URL, { 
                 method: "POST", 
-                body: JSON.stringify({ method: "add", date, type, typeText, memo })
-            })
-            .then(() => fetchData()) // 전송 완료 후에만 조용히 목록 갱신
-            .finally(() => {
-                document.getElementById('loader').style.display = 'none';
+                body: JSON.stringify({ method: "add", date, type: point, typeText, memo })
+            }).then(() => {
+                console.log("동기화 완료");
+                // 혹시 모르니 서버 데이터로 최종 싱크
+                fetchData(); 
             });
         }
 
-        // [핵심] 삭제 버튼 누르자마자 즉시 실행
+        // 4. 삭제 (즉시 반영 로직)
         function deleteItem(date, memo) {
-            if(!confirm("삭제할까요?")) return;
+            if(!confirm("삭제하시겠습니까?")) return;
             
-            // 1. 화면에서 즉시 제거 (0.01초)
+            // [핵심] 화면에서 먼저 지우기
             history = history.filter(item => !(item.date.substring(0,10) === date && item.memo === memo));
             renderUI();
 
-            document.getElementById('loader').style.display = 'block';
-
-            // 2. 서버 전송 (비동기)
+            // 서버 전송
             fetch(API_URL, { 
                 method: "POST", 
                 body: JSON.stringify({ method: "delete", date: date, memo: memo })
-            })
-            .then(() => fetchData())
-            .finally(() => {
-                document.getElementById('loader').style.display = 'none';
-            });
+            }).then(() => fetchData());
         }
 
-        function renderUI() {
-            const total = parseFloat(document.getElementById('totalDays').value) || 0;
-            const used = history.reduce((acc, cur) => acc + parseFloat(cur.point), 0);
-            document.getElementById('remainDays').innerText = (total - used).toFixed(1);
-            
-            document.getElementById('historyList').innerHTML = history.map(item => {
-                const cleanDate = item.date.substring(0, 10);
-                return `
-                <div class="history-item">
-                    <div class="history-header">
-                        <div class="history-info">
-                            <span class="history-date">${cleanDate}</span>
-                            <span class="history-type">${item.type.split(' ')[0]}</span>
-                        </div>
-                        <button class="del-link" onclick="deleteItem('${cleanDate}', '${item.memo}')">삭제</button>
-                    </div>
-                    ${item.memo ? `<div class="history-memo">${item.memo}</div>` : ''}
-                </div>`;
-            }).join('');
-        }
+        // 페이지 로드 시 실행
+        window.onload = () => {
+            const today = new Date().toISOString().substring(0, 10);
+            document.getElementById('vacDate').value = today;
+            fetchData();
+        };
     </script>
 </body>
 </html>
