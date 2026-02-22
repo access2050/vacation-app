@@ -7,23 +7,31 @@
     <link rel="manifest" href="manifest.json">
     <style>
         :root { --primary: #4a90e2; --bg: #f5f7fa; }
-        body { font-family: 'Pretendard', sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; margin-bottom: 15px; box-sizing: border-box; }
+        body { font-family: 'Pretendard', -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); width: 100%; max-width: 400px; margin-bottom: 15px; box-sizing: border-box; }
+        
         .status-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; color: #333; font-size: 1.1rem; }
-        #remainingPoints { color: var(--primary); font-size: 1.6rem; font-weight: bold; }
+        #remainingPoints { color: var(--primary); font-size: 1.8rem; font-weight: bold; }
+        
         .setting-row { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ddd; }
         .setting-row label { font-size: 0.85rem; color: #666; white-space: nowrap; }
-        .setting-row input { margin: 0; padding: 8px; font-size: 0.9rem; border-radius: 6px; width: 70px; text-align: center; }
-        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
-        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; }
+        .setting-row input { margin: 0; padding: 8px; font-size: 0.9rem; border-radius: 6px; width: 70px; text-align: center; border: 1px solid #ddd; }
+
+        input, select, button { width: 100%; padding: 12px; margin: 6px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; outline: none; }
+        button { background: var(--primary); color: white; border: none; cursor: pointer; font-weight: bold; transition: opacity 0.2s; }
+        button:active { opacity: 0.8; }
+        
         .list-container { padding: 0; overflow: hidden; }
-        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; }
+        .list-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; }
         .list-item:last-child { border-bottom: none; }
-        .info { display: flex; flex-direction: column; }
-        .date { font-weight: bold; color: #333; }
-        .memo { font-size: 0.85rem; color: #666; }
-        .del-btn { width: auto; padding: 5px 10px; background: #ff4d4d; font-size: 0.8rem; margin: 0; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .info { display: flex; flex-direction: column; gap: 4px; }
+        .date-row { display: flex; align-items: center; gap: 8px; }
+        .date { font-weight: bold; color: #333; font-size: 1rem; }
+        .type-tag { color: var(--primary); font-size: 0.85rem; font-weight: 600; background: #eef5ff; padding: 2px 6px; border-radius: 4px; }
+        .memo { font-size: 0.85rem; color: #888; }
+        .del-btn { width: auto; padding: 6px 10px; background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; font-size: 0.8rem; margin: 0; border-radius: 6px; }
+        .del-btn:active { background: #ff4d4d; color: white; }
     </style>
 </head>
 <body>
@@ -33,15 +41,17 @@
             <h2>남은 연차:</h2>
             <span id="remainingPoints">0.0</span>
         </div>
+
         <div class="setting-row">
             <label>📅 총 연차 일수 설정:</label>
             <input type="number" id="totalLimit" step="0.5" value="15" onchange="saveSettings()">
         </div>
+
         <input type="date" id="vacDate">
         <select id="vacType">
-            <option value="-1">연차 사용 (-1)</option>
-            <option value="-0.5">오전 반차 (-0.5)</option>
-            <option value="-0.5">오후 반차 (-0.5)</option>
+            <option value="-1">연차 (1)</option>
+            <option value="-0.5">오전반차 (0.5)</option>
+            <option value="-0.5">오후반차 (0.5)</option>
         </select>
         <input type="text" id="vacMemo" placeholder="메모 (사유 등)">
         <button onclick="addVacation()">기록하기</button>
@@ -50,19 +60,22 @@
     <div class="card list-container" id="historyList"></div>
 
     <script>
-        const STORAGE_KEY = 'vacation_history_v5';
-        const LIMIT_KEY = 'vacation_limit_v5';
+        // 이 Key 이름들을 바꾸지 않으면 업데이트해도 데이터가 유지됩니다.
+        const STORAGE_KEY = 'vacation_history_final';
+        const LIMIT_KEY = 'vacation_limit_final';
         let historyData = [];
 
         window.onload = () => {
             const savedLimit = localStorage.getItem(LIMIT_KEY);
             if (savedLimit) document.getElementById('totalLimit').value = savedLimit;
+            
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) historyData = JSON.parse(savedData);
             
             const now = new Date();
             const offset = now.getTimezoneOffset() * 60000;
             document.getElementById('vacDate').value = new Date(now - offset).toISOString().split('T')[0];
+            
             renderUI();
         };
 
@@ -76,25 +89,32 @@
             const remainSpan = document.getElementById('remainingPoints');
             const totalLimit = parseFloat(document.getElementById('totalLimit').value) || 0;
             
-            // [추가] 날짜 기준 내림차순 정렬 (최신 날짜가 위로)
+            // 날짜 기준 내림차순 정렬 (입력 순서 상관없이 최신 날짜가 위로)
             historyData.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             let currentPoints = totalLimit;
             let html = "";
+
             historyData.forEach((item, index) => {
                 currentPoints += parseFloat(item.point);
+                const pointDisplay = Math.abs(item.point); // -1 -> 1, -0.5 -> 0.5
+                
                 html += `
                     <div class="list-item">
                         <div class="info">
-                            <span class="date">${item.date} (${item.type})</span>
+                            <div class="date-row">
+                                <span class="date">${item.date}</span>
+                                <span class="type-tag">${item.type}(${pointDisplay})</span>
+                            </div>
                             <span class="memo">${item.memo || '-'}</span>
                         </div>
                         <button class="del-btn" onclick="deleteItem(${index})">삭제</button>
                     </div>
                 `;
             });
+
             remainSpan.innerText = currentPoints.toFixed(1) + "개";
-            listDiv.innerHTML = html || '<div style="padding:20px; text-align:center; color:#999;">기록이 없습니다.</div>';
+            listDiv.innerHTML = html || '<div style="padding:30px; text-align:center; color:#ccc;">기록이 없습니다.</div>';
         }
 
         function addVacation() {
@@ -103,7 +123,9 @@
             const typeText = typeSelect.options[typeSelect.selectedIndex].text.split(' ')[0];
             const point = parseFloat(typeSelect.value);
             const memo = document.getElementById('vacMemo').value;
-            if(!date) return alert("날짜를 입력하세요!");
+            
+            if(!date) return alert("날짜를 선택하세요!");
+
             historyData.push({ date, point, type: typeText, memo });
             saveAndRefresh();
             document.getElementById('vacMemo').value = "";
