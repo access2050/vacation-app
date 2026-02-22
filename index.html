@@ -3,93 +3,72 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>연차 매니저</title>
+    <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>스마트 연차 매니저</title>
     <style>
-        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; --danger: #e74c3c; }
-        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; -webkit-tap-highlight-color: transparent; }
+        :root { --primary: #4a90e2; --bg: #f5f7fa; --card: #ffffff; }
+        body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 15px; color: #333; }
         .card { background: var(--card); padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        h3 { margin-top: 0; font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 10px; margin-bottom: 15px; }
+        h3 { margin: 0 0 15px 0; font-size: 1.1rem; border-left: 4px solid var(--primary); padding-left: 10px; }
         .summary { display: flex; justify-content: space-around; text-align: center; }
-        .summary div h4 { margin: 0; font-size: 0.8rem; color: #888; }
-        .summary div p { margin: 5px 0 0; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
-        .input-group { margin-top: 15px; }
-        label { font-size: 0.8rem; color: #888; display: block; margin-bottom: 5px; }
-        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; background: #fff; }
-        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-size: 1rem; font-weight: bold; margin-top: 15px; cursor: pointer; }
+        .summary p { margin: 5px 0 0; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
+        input, select, textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; margin-bottom: 10px; }
+        button { width: 100%; padding: 15px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
         .history-item { border-bottom: 1px solid #eee; padding: 15px 0; position: relative; }
-        .history-main { display: flex; justify-content: space-between; align-items: center; padding-right: 40px; }
-        .history-date { font-weight: 700; font-size: 1.05rem; color: #2c3e50; }
-        .history-type { font-size: 0.75rem; color: var(--primary); background: #ebf3ff; padding: 4px 10px; border-radius: 20px; font-weight: bold; }
-        .history-memo { background: #f8f9fa; padding: 10px; border-radius: 8px; margin-top: 8px; font-size: 0.9rem; color: #555; border-left: 3px solid #ddd; }
-        .del-btn { position: absolute; right: 0; top: 15px; color: #ccc; border: none; background: none; font-size: 1.2rem; cursor: pointer; width: 30px; height: 30px; padding: 0; }
-        #loader { display:none; text-align:center; padding:10px; color:#666; font-size: 0.9rem; }
+        .history-date { font-weight: bold; font-size: 1.1rem; }
+        .history-type { font-size: 0.8rem; color: var(--primary); background: #ebf3ff; padding: 3px 8px; border-radius: 10px; margin-left: 5px; }
+        .history-memo { background: #f8f9fa; padding: 8px; border-radius: 5px; margin-top: 5px; font-size: 0.9rem; color: #666; }
+        .del-btn { position: absolute; right: 0; top: 15px; color: #ff4d4d; border: 1px solid #ff4d4d; background: none; padding: 2px 8px; border-radius: 5px; font-size: 0.8rem; }
+        #loader { display:none; text-align:center; padding:10px; }
     </style>
 </head>
 <body>
-
     <div class="card">
         <h3>📊 연차 현황</h3>
         <div class="summary">
-            <div><h4>총 연차</h4><input type="number" id="totalDays" style="width:70px; text-align:center;" oninput="saveTotalDays()"></div>
+            <div><h4>총 연차</h4><input type="number" id="totalDays" style="width:70px; text-align:center;" oninput="saveTotal()"></div>
             <div><h4>남은 연차</h4><p id="remainDays">0</p></div>
         </div>
     </div>
-
     <div class="card">
-        <h3>📅 연차 등록</h3>
-        <div class="input-group"><label>날짜</label><input type="date" id="vacDate"></div>
-        <div class="input-group">
-            <label>종류</label>
-            <select id="vacType">
-                <option value="1">연차 (1일)</option>
-                <option value="0.5">오전반차 (0.5일)</option>
-                <option value="0.5">오후반차 (0.5일)</option>
-            </select>
-        </div>
-        <div class="input-group"><label>메모</label><textarea id="vacMemo" placeholder="사유 입력"></textarea></div>
-        <button id="addBtn" onclick="addVacation()">구글 시트에 저장</button>
-        <div id="loader">⏳ 처리 중...</div>
+        <h3>📅 연차 신청</h3>
+        <input type="date" id="vacDate">
+        <select id="vacType">
+            <option value="1">연차 (1일)</option>
+            <option value="0.5">오전반차 (0.5일)</option>
+            <option value="0.5">오후반차 (0.5일)</option>
+        </select>
+        <textarea id="vacMemo" placeholder="메모 입력"></textarea>
+        <button id="addBtn" onclick="addVacation()">저장하기</button>
+        <div id="loader">⌛ 처리 중...</div>
     </div>
-
     <div class="card">
-        <h3>📋 사용 기록</h3>
+        <h3>📋 기록</h3>
         <div id="historyList"></div>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbx1V56daqCdGGFaVUsIpKiAXQQzchXrtAnZ2-n8QHiI-o10dqGRs0M8HIYVKR4oa1nAnQ/exec"; // ⚠️ 여기에 실제 본인의 배포 URL을 넣으세요!
+        const API_URL = "https://script.google.com/macros/s/AKfycbxoYdpMJ5gokrcXymPPxJ8RSr-bVQAJ1yztT-u4rzsi_buCu7KtRGKToN6qPhvrZASJYQ/exec"; 
         let history = [];
 
-        // 1. 초기 로드 시 실행
         window.onload = () => {
-            const savedTotal = localStorage.getItem('totalDays') || "15";
-            document.getElementById('totalDays').value = savedTotal;
+            // 저장된 총 연차 불러오기
+            document.getElementById('totalDays').value = localStorage.getItem('totalDays') || 15;
             fetchData();
         };
 
-        // 2. 총 연차 변경 시 저장
-        function saveTotalDays() {
-            const val = document.getElementById('totalDays').value;
-            localStorage.setItem('totalDays', val);
+        function saveTotal() {
+            localStorage.setItem('totalDays', document.getElementById('totalDays').value);
             renderUI();
         }
 
         async function fetchData() {
-            if(!API_URL || API_URL.includes("사용자님")) return;
-            try {
-                const response = await fetch(API_URL);
-                const rows = await response.json();
-                history = rows.map((row, index) => ({
-                    id: index + 2, // 시트 행 번호 (헤더 제외 2행부터 시작)
-                    date: row[0], 
-                    point: row[1],   
-                    type: row[2],    
-                    memo: row[3] || ""
-                }));
-                renderUI();
-            } catch (e) { console.error("데이터 로드 실패:", e); }
+            const res = await fetch(API_URL);
+            const rows = await res.json();
+            history = rows.map(r => ({ date: r[0], point: r[1], type: r[2], memo: r[3] }));
+            renderUI();
         }
 
         async function addVacation() {
@@ -97,65 +76,37 @@
             const typeText = document.getElementById('vacType').options[document.getElementById('vacType').selectedIndex].text;
             const type = document.getElementById('vacType').value;
             const memo = document.getElementById('vacMemo').value;
-            if(!date) return alert("날짜를 선택하세요");
-
-            toggleLoader(true);
-            try {
-                await fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ method: "add", date, type, typeText, memo })
-                });
-                document.getElementById('vacMemo').value = "";
-                await fetchData();
-            } catch (e) { alert("저장 실패"); }
-            toggleLoader(false);
+            if(!date) return alert("날짜 선택!");
+            
+            document.getElementById('loader').style.display = 'block';
+            await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "add", date, type, typeText, memo })});
+            document.getElementById('vacMemo').value = "";
+            await fetchData();
+            document.getElementById('loader').style.display = 'none';
         }
 
-        // 3. 삭제 기능 추가
-        async function deleteItem(rowId) {
-            if(!confirm("이 기록을 삭제할까요?")) return;
-            toggleLoader(true);
-            try {
-                await fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify({ method: "delete", rowId: rowId })
-                });
-                await fetchData();
-            } catch (e) { alert("삭제 실패"); }
-            toggleLoader(false);
-        }
-
-        function toggleLoader(show) {
-            document.getElementById('addBtn').disabled = show;
-            document.getElementById('loader').style.display = show ? 'block' : 'none';
+        async function deleteItem(date, memo) {
+            if(!confirm("삭제할까요?")) return;
+            document.getElementById('loader').style.display = 'block';
+            // 날짜 형식에서 요일 제거하고 순수 날짜만 보냄
+            const pureDate = date.split(' ')[0];
+            await fetch(API_URL, { method: "POST", body: JSON.stringify({ method: "delete", date: pureDate, memo })});
+            await fetchData();
+            document.getElementById('loader').style.display = 'none';
         }
 
         function renderUI() {
             const total = parseFloat(document.getElementById('totalDays').value) || 0;
-            const used = history.reduce((acc, cur) => acc + parseFloat(cur.point || 0), 0);
+            const used = history.reduce((acc, cur) => acc + parseFloat(cur.point), 0);
             document.getElementById('remainDays').innerText = (total - used).toFixed(1);
-            
-            const listDiv = document.getElementById('historyList');
-            listDiv.innerHTML = history.length === 0 ? '<p style="text-align:center; color:#ccc;">기록 없음</p>' : 
-                history.map(item => {
-                    // 요일 자동 계산 (시트 서식에 요일이 없을 경우를 대비한 안전장치)
-                    let displayDate = item.date;
-                    if(!displayDate.includes("(")) {
-                        const d = new Date(displayDate);
-                        const week = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
-                        if(week) displayDate += ` (${week})`;
-                    }
-
-                    return `
-                    <div class="history-item">
-                        <button class="del-btn" onclick="deleteItem(${item.id})">×</button>
-                        <div class="history-main">
-                            <span class="history-date">${displayDate}</span>
-                            <span class="history-type">${item.type}</span>
-                        </div>
-                        ${item.memo ? `<div class="history-memo">📝 ${item.memo}</div>` : ''}
-                    </div>
-                `}).join('');
+            document.getElementById('historyList').innerHTML = history.map(item => `
+                <div class="history-item">
+                    <span class="history-date">${item.date}</span>
+                    <span class="history-type">${item.type}</span>
+                    <button class="del-btn" onclick="deleteItem('${item.date}', '${item.memo}')">삭제</button>
+                    ${item.memo ? `<div class="history-memo">${item.memo}</div>` : ''}
+                </div>
+            `).join('');
         }
     </script>
 </body>
