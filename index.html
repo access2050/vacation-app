@@ -23,6 +23,11 @@
         .type-tag { color: var(--primary); font-size: 0.85rem; font-weight: 600; background: #eef5ff; padding: 2px 6px; border-radius: 4px; }
         .memo { font-size: 0.85rem; color: #888; }
         .del-btn { width: auto; padding: 6px 10px; background: transparent; color: #ff4d4d; border: 1px solid #ff4d4d; font-size: 0.8rem; border-radius: 6px; cursor: pointer; }
+        
+        /* 백업/복구 버튼 스타일 */
+        .backup-section { display: flex; gap: 10px; margin-top: 10px; }
+        .btn-secondary { background: #6c757d; font-size: 0.85rem; padding: 10px; }
+        #fileInput { display: none; }
     </style>
 </head>
 <body>
@@ -43,11 +48,16 @@
         </select>
         <input type="text" id="vacMemo" placeholder="메모 (사유 등)">
         <button onclick="addVacation()">기록하기</button>
+
+        <div class="backup-section">
+            <button class="btn-secondary" onclick="exportData()">💾 백업 (다운로드)</button>
+            <button class="btn-secondary" onclick="document.getElementById('fileInput').click()">📂 복구 (파일 선택)</button>
+            <input type="file" id="fileInput" accept=".json" onchange="importData(event)">
+        </div>
     </div>
     <div class="card" id="historyList" style="padding:0;"></div>
 
     <script>
-        // 🚀 이 두 키 이름이 앱의 '금고 주소'입니다. 절대 변경 금지!
         const STORAGE_KEY = 'vacation_master_data'; 
         const LIMIT_KEY = 'vacation_master_limit';
         
@@ -119,6 +129,47 @@
         function saveAndRefresh() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(historyData));
             renderUI();
+        }
+
+        // 📤 데이터 내보내기 (JSON 파일 다운로드)
+        function exportData() {
+            const data = {
+                history: historyData,
+                limit: document.getElementById('totalLimit').value
+            };
+            const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const today = new Date().toISOString().split('T')[0];
+            a.href = url;
+            a.download = `연차관리_백업_${today}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // 📥 데이터 가져오기 (파일 읽기)
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (confirm("기존 데이터가 파일의 데이터로 대체됩니다. 진행할까요?")) {
+                        historyData = imported.history || [];
+                        const limit = imported.limit || "15";
+                        document.getElementById('totalLimit').value = limit;
+                        localStorage.setItem(LIMIT_KEY, limit);
+                        saveAndRefresh();
+                        alert("복구가 완료되었습니다!");
+                    }
+                } catch (err) {
+                    alert("올바른 백업 파일이 아닙니다.");
+                }
+            };
+            reader.readAsText(file);
+            event.target.value = ''; // 같은 파일 다시 선택 가능하게 초기화
         }
     </script>
 </body>
